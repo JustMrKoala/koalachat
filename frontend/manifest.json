@@ -1,0 +1,28 @@
+{
+  "name": "KoalaChat",
+  "short_name": "KoalaChat",
+  "description": "Privacy-first encrypted messaging with end-to-end encryption",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b141a",
+  "theme_color": "#202c33",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["social", "security"],
+  "icons": [
+    {
+      "src": "/static/icons/logo.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/logo.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="KoalaChat - Privacy-first encrypted messaging with end-to-end encryption and ephemeral messages">
+  <meta name="theme-color" content="#111b21">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KoalaChat">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icons/logo.png">
+  <link rel="icon" type="image/png" href="/static/icons/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <title>KoalaChat</title>
+</head>
+<body>
+  <div id="app-shell">
+    <section id="welcome-view" class="welcome-screen" aria-label="Welcome">
+      <div class="welcome-brand">
+        <img src="/static/icons/logo.png" alt="KoalaChat — Secure. Private. End-to-End." class="welcome-logo" width="320" height="auto">
+        <h1 class="visually-hidden">KoalaChat</h1>
+      </div>
+      <ul class="feature-list">
+        <li>
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/></svg>
+          End-to-end encrypted messages
+        </li>
+        <li>
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+          Disappearing messages by default
+        </li>
+        <li>
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>
+          Separate account ID and friend code
+        </li>
+      </ul>
+      <button id="btn-create-account" class="btn btn-primary btn-lg" type="button">Create Account</button>
+    </section>
+
+    <section id="main-view" class="hidden" aria-label="Main application">
+      <div class="app-layout">
+        <aside id="sidebar" class="sidebar">
+          <header id="list-header" class="wa-header">
+            <div class="header-left">
+              <img src="/static/icons/logo.png" alt="" class="header-logo" width="32" height="32" aria-hidden="true">
+              <h1>Chats</h1>
+            </div>
+            <div class="header-actions">
+              <span id="connection-status" class="status-dot status-disconnected" title="Offline" aria-live="polite"></span>
+              <button id="btn-show-qr" class="header-btn" type="button" aria-label="Show QR code">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
+              </button>
+              <button id="btn-scan-qr" class="header-btn" type="button" aria-label="Scan QR code">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </button>
+              <button id="btn-requests" class="header-btn" type="button" aria-label="Friend requests">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <span id="request-badge" class="request-badge hidden">0</span>
+              </button>
+              <button id="btn-add-friend" class="header-btn" type="button" aria-label="Add friend">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+              </button>
+              <button id="btn-settings" class="header-btn" type="button" aria-label="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              </button>
+            </div>
+          </header>
+
+          <div id="chats-view">
+            <div class="account-strip">
+              <div class="account-row">
+                <span class="account-label">Friend Code</span>
+                <span id="friend-code-display" class="friend-code"></span>
+                <button id="btn-copy-friendcode" class="copy-btn" type="button" aria-label="Copy friend code">Copy</button>
+              </div>
+              <div class="account-row account-row-private">
+                <span class="account-label">Account ID</span>
+                <span id="account-id-display" class="account-id-private" title="Keep private — do not share"></span>
+              </div>
+            </div>
+            <div id="sent-requests-strip" class="sent-requests-strip hidden" aria-live="polite"></div>
+            <div class="search-bar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="chat-search" placeholder="Search chats" autocomplete="off" aria-label="Search chats">
+            </div>
+            <section id="requests-section" class="requests-section hidden" aria-label="Friend requests">
+              <div class="requests-section-header">
+                <h2>Friend Requests</h2>
+                <span id="requests-count" class="requests-count"></span>
+              </div>
+              <ul id="requests-list" class="requests-list"></ul>
+            </section>
+            <ul id="friends-list" class="chat-list" aria-label="Chat list"></ul>
+            <div id="empty-chats" class="empty-state hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <p>No chats yet</p>
+              <span>Scan a QR code or add a friend to start messaging</span>
+            </div>
+          </div>
+        </aside>
+
+        <div id="chat-pane" class="chat-pane">
+          <div id="chat-placeholder" class="chat-placeholder">
+            <img src="/static/icons/logo.png" alt="KoalaChat" class="placeholder-logo" width="280" height="auto">
+            <h2 class="visually-hidden">KoalaChat</h2>
+            <p>Select a chat to start messaging</p>
+            <span>Your messages are end-to-end encrypted and disappear automatically</span>
+          </div>
+
+          <section id="chat-view" class="hidden" aria-label="Chat conversation">
+            <header class="wa-header chat-header-bar">
+              <button id="btn-back" class="header-btn back-btn" type="button" aria-label="Back to chats">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              </button>
+              <div id="chat-avatar" class="avatar avatar-sm" aria-hidden="true"></div>
+              <div class="chat-header-info">
+                <h2 id="chat-peer-id"></h2>
+                <span class="chat-subtitle">end-to-end encrypted</span>
+              </div>
+            </header>
+            <div id="chat-messages" class="chat-messages chat-wallpaper" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <footer class="chat-compose">
+              <div class="compose-box">
+                <input type="text" id="message-input" placeholder="Message" autocomplete="off" aria-label="Message input">
+                <button id="btn-send" class="send-btn" type="button" aria-label="Send message">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+              </div>
+            </footer>
+          </section>
+        </div>
+      </div>
+
+      <div id="qr-panel" class="sheet hidden" role="dialog" aria-labelledby="qr-title">
+        <div class="sheet-content">
+          <h3 id="qr-title">My QR Code</h3>
+          <p>Shares your friend code only — your account ID stays private</p>
+          <div id="qr-code" role="img" aria-label="Your friend QR code"></div>
+          <button id="btn-close-qr" class="btn btn-secondary" type="button">Close</button>
+        </div>
+      </div>
+
+      <div id="scanner-panel" class="sheet hidden" role="dialog" aria-labelledby="scan-title">
+        <div class="sheet-content">
+          <h3 id="scan-title">Scan QR Code</h3>
+          <div id="qr-reader" aria-label="QR code scanner"></div>
+          <button id="btn-close-scan" class="btn btn-secondary" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <div id="add-friend-panel" class="sheet hidden" role="dialog" aria-labelledby="add-title">
+        <div class="sheet-content">
+          <h3 id="add-title">Add Friend</h3>
+          <p class="sheet-hint">Enter their 10-digit friend code to send a request</p>
+          <div class="form-group">
+            <label for="friend-code-input">Friend Code</label>
+            <input type="text" id="friend-code-input" inputmode="numeric" autocomplete="off" maxlength="10" aria-required="true" placeholder="e.g. 4829103756">
+          </div>
+          <div class="form-actions">
+            <button id="btn-confirm-add" class="btn btn-primary" type="button">Send Request</button>
+            <button id="btn-cancel-add" class="btn btn-secondary" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-panel" class="sheet hidden" role="dialog" aria-labelledby="settings-title">
+        <div class="sheet-content">
+          <h3 id="settings-title">Settings</h3>
+          <div class="settings-group">
+            <label for="ttl-select">Message expiry</label>
+            <select id="ttl-select" aria-label="Message time to live">
+              <option value="300">5 minutes</option>
+              <option value="1800">30 minutes</option>
+              <option value="3600" selected>1 hour</option>
+              <option value="14400">4 hours</option>
+              <option value="86400">24 hours</option>
+            </select>
+          </div>
+          <button id="btn-purge-settings" class="btn btn-danger btn-block" type="button">Koala Purge</button>
+          <button id="btn-close-settings" class="btn btn-secondary btn-block" type="button">Close</button>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <div id="purge-modal" class="modal-overlay hidden" role="alertdialog" aria-labelledby="purge-title">
+    <div class="modal">
+      <h3 id="purge-title">Koala Purge</h3>
+      <p>This will permanently erase all local data, keys, messages, and caches. The server will wipe all ephemeral buffers. This action is irreversible.</p>
+      <div class="modal-actions">
+        <button id="btn-cancel-purge" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="btn-confirm-purge" class="btn btn-danger" type="button">Purge Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="capture-warning" class="capture-warning hidden" role="alert">Screen capture detected. Content blurred for protection.</div>
+
+  <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
+
+  <section id="offline-screen" class="offline-screen hidden" aria-labelledby="offline-title" role="alertdialog">
+    <div class="offline-content">
+      <img src="/static/icons/logo.png" alt="" class="offline-logo" width="240" height="auto" aria-hidden="true">
+      <h2 id="offline-title">No Connection</h2>
+      <p>Check your Wi-Fi or mobile data. KoalaChat needs a network connection to send and receive messages.</p>
+      <button id="btn-offline-retry" class="btn btn-primary btn-lg" type="button">
+        <span class="btn-label">Try Again</span>
+      </button>
+    </div>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous"></script>
+  <script src="/static/js/crypto/e2ee.js"></script>
+  <script src="/static/js/crypto/koalamix.js"></script>
+  <script src="/static/js/ws.js"></script>
+  <script src="/static/js/friends.js"></script>
+  <script src="/static/js/messages.js"></script>
+  <script src="/static/js/purge.js"></script>
+  <script src="/static/js/antitamper.js"></script>
+  <script src="/static/js/offline.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", () => Offline.init());</script>
+</body>
+</html>

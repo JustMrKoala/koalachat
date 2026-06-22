@@ -1,0 +1,38 @@
+services:
+  koalachat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: koalachat
+    ports:
+      - "${KOALA_PORT:-8999}:8999"
+    volumes:
+      - koala-certs:/certs
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - KOALA_ENV=${KOALA_ENV:-production}
+      - KOALA_HOST=0.0.0.0
+      - KOALA_PORT=8999
+      - KOALA_FRONTEND_DIR=/app/frontend
+      - SSL_CERT=/certs/cert.pem
+      - SSL_KEY=/certs/key.pem
+      - KOALA_ALLOW_SELF_SIGNED=${KOALA_ALLOW_SELF_SIGNED:-1}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('https://localhost:8999/health', context=__import__('ssl')._create_unverified_context())"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  koala-certs:
