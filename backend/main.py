@@ -360,14 +360,25 @@ async def handle_ws_message(account_id: str, data: dict, ws: WebSocket):
         return
 
 
+NO_CACHE = {"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"}
+
+
 @app.get("/manifest.json")
 async def manifest():
-    return FileResponse(FRONTEND_DIR / "manifest.json", media_type="application/manifest+json")
+    return FileResponse(
+        FRONTEND_DIR / "manifest.json",
+        media_type="application/manifest+json",
+        headers=NO_CACHE,
+    )
 
 
 @app.get("/sw.js")
 async def service_worker():
-    return FileResponse(FRONTEND_DIR / "sw.js", media_type="application/javascript")
+    return FileResponse(
+        FRONTEND_DIR / "sw.js",
+        media_type="application/javascript",
+        headers=NO_CACHE,
+    )
 
 
 if FRONTEND_DIR.exists():
@@ -375,14 +386,14 @@ if FRONTEND_DIR.exists():
 
     @app.get("/")
     async def index():
-        return FileResponse(FRONTEND_DIR / "index.html")
+        return FileResponse(FRONTEND_DIR / "index.html", headers=NO_CACHE)
 
     @app.get("/{path:path}")
     async def spa_fallback(path: str):
         file_path = FRONTEND_DIR / path
         if file_path.is_file():
             return FileResponse(file_path)
-        return FileResponse(FRONTEND_DIR / "index.html")
+        return FileResponse(FRONTEND_DIR / "index.html", headers=NO_CACHE)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ Privacy-first, end-to-end encrypted instant messaging. Anonymous accounts, ephem
 - **Server envelope encryption** — outer layer on E2EE payloads at rest; server never sees plaintext
 - **Separate IDs** — 16-digit account ID (private) and 10-digit friend code (shareable)
 - **Ephemeral messages** — configurable TTL with automatic wipe
+- **No database** — server state lives in memory only; nothing is persisted to disk
 - **Koala Purge** — one-tap irreversible local and server buffer wipe
 - **PWA** — installable on iOS and Android with fullscreen standalone mode
 - **Anti-tamper** — screenshot/recording mitigations, blur on tab switch
@@ -97,22 +98,28 @@ Set `KOALA_ALLOW_SELF_SIGNED=0` so the container refuses to start without valid 
 
 ### Remote deploy
 
+Set your target host before deploying. No server addresses or credentials are bundled in this repository.
+
 **Linux / macOS:**
 
 ```bash
-export KOALA_REMOTE_HOST=your-server.example
-export KOALA_REMOTE_USER=server
+export KOALA_REMOTE_HOST=chat.example.com
+export KOALA_REMOTE_USER=deploy
+export KOALA_REMOTE_DIR=/opt/koalachat
 make deploy
 ```
 
 **Windows:**
 
 ```bat
-set KOALA_REMOTE_HOST=your-server.example
+set KOALA_REMOTE_HOST=chat.example.com
+set KOALA_REMOTE_USER=deploy
 deploy.bat
 ```
 
-Both scripts SCP the project and run `docker compose up -d --build` on the remote host.
+Both scripts SCP the project and run `docker compose up -d --build` on the remote host. Deploy fails if the container does not pass `/health`.
+
+When using Cloudflare or another CDN in front of the app, bypass cache for HTML and `/sw.js` or users may see stale UI after deploys.
 
 ### Health checks
 

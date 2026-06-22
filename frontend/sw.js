@@ -1,4 +1,4 @@
-const CACHE_NAME = "koala-v6";
+const CACHE_NAME = "koala-v8";
 const ASSETS = [
   "/",
   "/static/css/style.css",
@@ -17,9 +17,19 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const keys = await cache.keys();
+      await Promise.all(keys.map((req) => cache.delete(req)));
+      await cache.addAll(ASSETS);
+    })
   );
   self.skipWaiting();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
@@ -34,19 +44,30 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.url.includes("/ws/") || event.request.url.includes("/api/")) {
+  const url = new URL(event.request.url);
+  if (
+    event.request.url.includes("/ws/") ||
+    event.request.url.includes("/api/") ||
+    url.pathname === "/sw.js" ||
+    url.pathname === "/health" ||
+    url.pathname === "/ready"
+  ) {
     return;
   }
+  const isStatic = url.pathname.startsWith("/static/");
+  const isNav = event.request.mode === "navigate" || url.pathname === "/";
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetched = fetch(event.request).then((response) => {
-        if (response.ok && event.request.method === "GET") {
+        if (response.ok && event.request.method === "GET" && isStatic) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       });
-      return cached || fetched;
+      return fetched.catch(() => {
+        if (isStatic || isNav) return cached;
+      });
     })
   );
 });

@@ -1,14 +1,20 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set "REMOTE_HOST=enterlanip"
-set "REMOTE_USER=server"
-set "REMOTE_DIR=/home/server/koalachat"
+set "REMOTE_HOST="
+set "REMOTE_USER=deploy"
+set "REMOTE_DIR=/opt/koalachat"
 set "ARCHIVE=koalachat-deploy.tar.gz"
 
 if not "%KOALA_REMOTE_HOST%"=="" set "REMOTE_HOST=%KOALA_REMOTE_HOST%"
 if not "%KOALA_REMOTE_USER%"=="" set "REMOTE_USER=%KOALA_REMOTE_USER%"
 if not "%KOALA_REMOTE_DIR%"=="" set "REMOTE_DIR=%KOALA_REMOTE_DIR%"
+
+if "%REMOTE_HOST%"=="" (
+  echo ERROR: Set KOALA_REMOTE_HOST to your server hostname or IP.
+  echo Example: set KOALA_REMOTE_HOST=chat.example.com
+  exit /b 1
+)
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
@@ -54,7 +60,8 @@ tar -czf "%ARCHIVE%" ^
   --exclude=".git" ^
   --exclude=".venv" ^
   --exclude="venv" ^
-  backend frontend docker scripts logo.png docker-compose.yml .dockerignore .env.example LICENSE README.md
+  --exclude=".env" ^
+  backend frontend docker scripts logo.png docker-compose.yml .dockerignore .env.example LICENSE README.md SECURITY.md
 if errorlevel 1 (
   echo ERROR: Failed to create archive.
   exit /b 1
@@ -63,7 +70,7 @@ if errorlevel 1 (
 echo [3/5] Preparing remote directory...
 ssh -o ConnectTimeout=10 %REMOTE_USER%@%REMOTE_HOST% "mkdir -p %REMOTE_DIR%"
 if errorlevel 1 (
-  echo ERROR: SSH connection failed. Check host, user, and key/password auth.
+  echo ERROR: SSH connection failed. Check host, user, and SSH key auth.
   del /f "%ARCHIVE%" 2>nul
   exit /b 1
 )
@@ -84,18 +91,21 @@ del /f "%ARCHIVE%" 2>nul
 
 if not "%DEPLOY_EXIT%"=="0" (
   echo.
-  echo ERROR: Remote docker compose failed. Ensure Docker is installed on %REMOTE_HOST%.
+  echo ERROR: Remote start failed. KoalaChat may not be running on %REMOTE_HOST%.
+  echo Check logs: ssh %REMOTE_USER%@%REMOTE_HOST% "cd %REMOTE_DIR% && docker compose logs --tail 80"
   exit /b 1
 )
 
 echo.
 echo  Deploy complete.
 echo  App: https://%REMOTE_HOST%:8999
+echo  Verify: curl -sk https://%REMOTE_HOST%:8999/health
 echo.
-echo  Override defaults with environment variables:
-echo    KOALA_REMOTE_USER   (default: server)
-echo    KOALA_REMOTE_HOST   (default: 192.168.178.111)
-echo    KOALA_REMOTE_DIR    (default: /home/server/koalachat)
+echo  Required:
+echo    KOALA_REMOTE_HOST   your server hostname or IP
+echo  Optional:
+echo    KOALA_REMOTE_USER   default: deploy
+echo    KOALA_REMOTE_DIR    default: /opt/koalachat
 echo.
 
 endlocal

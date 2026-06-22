@@ -214,10 +214,11 @@ class EphemeralStore:
     def purge_all(self):
         with self._lock:
             self._messages.clear()
-            for aid in list(self._pending_friends.keys()):
-                self._pending_friends[aid].clear()
-            for aid in list(self._pending_accepts.keys()):
-                self._pending_accepts[aid].clear()
+            self._accounts.clear()
+            self._friend_codes.clear()
+            self._friends.clear()
+            self._pending_friends.clear()
+            self._pending_accepts.clear()
 
     def secure_wipe_buffers(self):
         with self._lock:
