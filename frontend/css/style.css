@@ -1023,6 +1023,33 @@ body {
   justify-content: flex-end;
 }
 
+.capture-shield {
+  position: fixed;
+  inset: 0;
+  z-index: 2600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wa-bg);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease-out;
+}
+
+.capture-shield:not(.hidden) {
+  opacity: 1;
+}
+
+.capture-shield-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--wa-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .capture-warning {
   position: fixed;
   top: max(1rem, env(safe-area-inset-top));
@@ -1032,15 +1059,15 @@ body {
   color: white;
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius);
-  z-index: 2000;
+  z-index: 2700;
   font-weight: 500;
   font-size: 0.9rem;
   box-shadow: var(--shadow);
 }
 
 .antitamper-blur {
-  filter: blur(20px) !important;
-  transition: filter 0.1s;
+  filter: blur(24px) !important;
+  transition: filter 0.08s;
 }
 
 body.offline-active {

@@ -1,0 +1,30 @@
+---
+pid: 147420
+cwd: "C:\Users\Admin\Desktop\Workspace\KoalaChat"
+command: "Set-Location \"C:\\Users\\Admin\\Desktop\\Workspace\\KoalaChat\\backend\"; python -m uvicorn main:app --host 127.0.0.1 --port 8999"
+started_at: 2026-06-22T21:41:41.386Z
+running_for_ms: 164999   
+---
+INFO:     Started server process [143548]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8999 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53852 - "POST /api/register HTTP/1.1" 200 OK
+INFO:     ('127.0.0.1', 53853) - "WebSocket /ws/5059451802984642" [accepted]
+INFO:     127.0.0.1:53852 - "POST /api/register HTTP/1.1" 200 OK
+INFO:     connection open
+INFO:     ('127.0.0.1', 53854) - "WebSocket /ws/2876477142045369" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:53856 - "POST /api/register HTTP/1.1" 200 OK
+INFO:     ('127.0.0.1', 53857) - "WebSocket /ws/9664628008164638" [accepted]
+INFO:     127.0.0.1:53856 - "POST /api/register HTTP/1.1" 200 OK
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 53858) - "WebSocket /ws/4647053528666881" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 53859) - "WebSocket /ws/9664628008164638" [accepted]
+INFO:     connection open
+INFO:     connection closed

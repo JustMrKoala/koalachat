@@ -1,4 +1,4 @@
-const CACHE_NAME = "koala-v4";
+const CACHE_NAME = "koala-v6";
 const ASSETS = [
   "/",
   "/static/css/style.css",

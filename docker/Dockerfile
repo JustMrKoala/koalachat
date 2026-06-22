@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
+COPY logo.png ./logo.png
+COPY scripts/generate_icons.py ./scripts/generate_icons.py
+RUN python scripts/generate_icons.py
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh \
     && chown -R koala:koala /app

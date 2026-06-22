@@ -190,6 +190,20 @@ async def websocket_endpoint(ws: WebSocket, account_id: str):
             "fingerprint": fr["fingerprint"],
             "public_key": fr.get("public_key", ""),
         })
+    if pending_friends:
+        store.clear_pending_friend_requests(account_id)
+
+    pending_accepts = store.get_pending_friend_accepts(account_id)
+    for fa in pending_accepts:
+        await ws.send_json({
+            "type": "friend_accepted",
+            "friend_id": fa["friend_id"],
+            "friend_code": fa.get("friend_code", ""),
+            "public_key": fa.get("public_key", ""),
+            "fingerprint": fa.get("fingerprint", ""),
+        })
+    if pending_accepts:
+        store.clear_pending_friend_accepts(account_id)
 
     try:
         while True:
@@ -227,9 +241,14 @@ async def handle_ws_message(account_id: str, data: dict, ws: WebSocket):
         to_id = data.get("to_id")
         to_friend_code = data.get("to_friend_code", "")
         fingerprint = data.get("fingerprint")
+        public_key = data.get("public_key", "")
         if to_friend_code and not to_id:
             to_id = store.resolve_friend_code(to_friend_code)
-        if not to_id or not fingerprint:
+        if not to_id:
+            await ws.send_json({"type": "error", "message": "Friend code not found"})
+            return
+        if not fingerprint or not public_key:
+            await ws.send_json({"type": "error", "message": "Missing encryption keys"})
             return
         if to_id == account_id:
             await ws.send_json({"type": "error", "message": "Cannot add yourself"})
@@ -237,7 +256,9 @@ async def handle_ws_message(account_id: str, data: dict, ws: WebSocket):
         if not store.account_exists(to_id):
             await ws.send_json({"type": "error", "message": "Friend code not found"})
             return
-        public_key = data.get("public_key", "")
+        if store.are_friends(account_id, to_id):
+            await ws.send_json({"type": "error", "message": "Already friends"})
+            return
         from_friend_code = store.get_friend_code(account_id) or ""
         store.add_friend_request(account_id, to_id, fingerprint, public_key, from_friend_code)
         recipient_ws = connections.get(to_id)
@@ -249,6 +270,7 @@ async def handle_ws_message(account_id: str, data: dict, ws: WebSocket):
                 "fingerprint": fingerprint,
                 "public_key": public_key,
             })
+            store.remove_pending_friend_request(to_id, account_id)
         await ws.send_json({"type": "friend_request_sent", "to_friend_code": to_friend_code or store.get_friend_code(to_id)})
         return
 
@@ -264,15 +286,24 @@ async def handle_ws_message(account_id: str, data: dict, ws: WebSocket):
         if not friend_id:
             return
         if store.accept_friend(account_id, friend_id):
+            accept_payload = {
+                "type": "friend_accepted",
+                "friend_id": account_id,
+                "friend_code": store.get_friend_code(account_id) or "",
+                "public_key": public_key,
+                "fingerprint": data.get("fingerprint", ""),
+            }
             friend_ws = connections.get(friend_id)
             if friend_ws:
-                await friend_ws.send_json({
-                    "type": "friend_accepted",
-                    "friend_id": account_id,
-                    "friend_code": store.get_friend_code(account_id) or "",
-                    "public_key": public_key,
-                    "fingerprint": data.get("fingerprint", ""),
-                })
+                await friend_ws.send_json(accept_payload)
+            else:
+                store.add_pending_friend_accept(
+                    friend_id,
+                    account_id,
+                    accept_payload["friend_code"],
+                    public_key,
+                    accept_payload["fingerprint"],
+                )
             pending_pk = store.get_pending_public_key(account_id, friend_id)
             await ws.send_json({
                 "type": "friend_accepted",

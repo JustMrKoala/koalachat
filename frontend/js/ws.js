@@ -4,6 +4,7 @@ const WSClient = {
   handlers: {},
   reconnectTimer: null,
   pingInterval: null,
+  outbox: [],
 
   connect(accountId) {
     WSClient.accountId = accountId;
@@ -12,6 +13,7 @@ const WSClient = {
     WSClient.socket = new WebSocket(url);
 
     WSClient.socket.onopen = () => {
+      WSClient._flushOutbox();
       WSClient._emit("connected");
       WSClient.pingInterval = setInterval(() => {
         WSClient.send({ type: "ping" });
@@ -41,6 +43,19 @@ const WSClient = {
   send(data) {
     if (WSClient.socket && WSClient.socket.readyState === WebSocket.OPEN) {
       WSClient.socket.send(JSON.stringify(data));
+      return true;
+    }
+    WSClient.outbox.push(data);
+    return false;
+  },
+
+  isReady() {
+    return WSClient.socket && WSClient.socket.readyState === WebSocket.OPEN;
+  },
+
+  _flushOutbox() {
+    while (WSClient.outbox.length && WSClient.isReady()) {
+      WSClient.socket.send(JSON.stringify(WSClient.outbox.shift()));
     }
   },
 
@@ -62,6 +77,7 @@ const WSClient = {
     clearTimeout(WSClient.reconnectTimer);
     clearInterval(WSClient.pingInterval);
     WSClient.accountId = null;
+    WSClient.outbox = [];
     if (WSClient.socket) {
       WSClient.socket.close();
       WSClient.socket = null;

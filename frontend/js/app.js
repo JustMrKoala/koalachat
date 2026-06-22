@@ -25,9 +25,9 @@ const App = {
       await App._restoreKeys(data.privateKeyJwk);
       await App._ensureFriendCode();
       App.showMain();
-      WSClient.connect(App.accountId);
       App._bindEvents();
       App._bindWS();
+      WSClient.connect(App.accountId);
     } else {
       App.showWelcome();
     }
@@ -164,9 +164,9 @@ const App = {
     );
 
     App.showMain();
-    WSClient.connect(App.accountId);
     App._bindEvents();
     App._bindWS();
+    WSClient.connect(App.accountId);
   },
 
   showMain() {
@@ -514,8 +514,11 @@ const App = {
   },
 
   async acceptRequest(req) {
-    const pubKey = req.public_key || req.fingerprint;
-    Friends.add(req.from_id, pubKey, req.from_friend_code || "");
+    if (!req.public_key) {
+      App._toast("Request is missing encryption keys — ask them to resend");
+      return;
+    }
+    Friends.add(req.from_id, req.public_key, req.from_friend_code || "");
     WSClient.send({
       type: "friend_accept",
       friend_id: req.from_id,
@@ -647,8 +650,23 @@ const App = {
 
   async addFriendManual() {
     const code = document.getElementById("friend-code-input").value.trim();
-    if (!code || code.length !== 10) return;
-    if (code === App.friendCode) return;
+    if (!code) return;
+    if (code.length !== 10) {
+      App._toast("Friend code must be 10 digits");
+      return;
+    }
+    if (code === App.friendCode) {
+      App._toast("You cannot add yourself");
+      return;
+    }
+    if (Friends.list.some((id) => Friends.peerCodes[id] === code)) {
+      App._toast("Already connected with this friend");
+      return;
+    }
+    if (Friends.sentRequests.includes(code)) {
+      App._toast("Request already sent to this friend code");
+      return;
+    }
 
     const res = await fetch(`/api/friendcode/${code}/exists`);
     const data = await res.json();
@@ -665,6 +683,9 @@ const App = {
     });
     document.getElementById("friend-code-input").value = "";
     App.hideAddFriend();
+    if (!WSClient.isReady()) {
+      App._toast("Connecting — request will send shortly");
+    }
   },
 
   confirmPurge() {

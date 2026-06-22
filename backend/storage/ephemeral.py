@@ -25,6 +25,7 @@ class EphemeralStore:
         self._friend_codes: dict[str, str] = {}
         self._friends: dict[str, set[str]] = {}
         self._pending_friends: dict[str, list[dict]] = {}
+        self._pending_accepts: dict[str, list[dict]] = {}
         self._lock = threading.Lock()
 
     def register_account(self, account_id: str, friend_code: str, key_fingerprint: str) -> bool:
@@ -39,6 +40,7 @@ class EphemeralStore:
             self._friend_codes[friend_code] = account_id
             self._friends[account_id] = set()
             self._pending_friends[account_id] = []
+            self._pending_accepts[account_id] = []
             return True
 
     def resolve_friend_code(self, friend_code: str) -> Optional[str]:
@@ -81,10 +83,19 @@ class EphemeralStore:
             if msg_id in self._messages:
                 del self._messages[msg_id]
 
-    def add_friend_request(self, from_id: str, to_id: str, fingerprint: str, public_key: str = "", from_friend_code: str = ""):
+    def add_friend_request(self, from_id: str, to_id: str, fingerprint: str, public_key: str = "", from_friend_code: str = "") -> bool:
         with self._lock:
             if to_id not in self._pending_friends:
                 self._pending_friends[to_id] = []
+            for req in self._pending_friends[to_id]:
+                if req["from_id"] == from_id:
+                    req.update({
+                        "from_friend_code": from_friend_code,
+                        "fingerprint": fingerprint,
+                        "public_key": public_key,
+                        "timestamp": time.time(),
+                    })
+                    return False
             self._pending_friends[to_id].append({
                 "from_id": from_id,
                 "from_friend_code": from_friend_code,
@@ -92,10 +103,22 @@ class EphemeralStore:
                 "public_key": public_key,
                 "timestamp": time.time(),
             })
+            return True
 
     def get_pending_friend_requests(self, account_id: str) -> list[dict]:
         with self._lock:
             return list(self._pending_friends.get(account_id, []))
+
+    def clear_pending_friend_requests(self, account_id: str):
+        with self._lock:
+            self._pending_friends[account_id] = []
+
+    def remove_pending_friend_request(self, account_id: str, from_id: str):
+        with self._lock:
+            self._pending_friends[account_id] = [
+                r for r in self._pending_friends.get(account_id, [])
+                if r["from_id"] != from_id
+            ]
 
     def get_pending_public_key(self, account_id: str, friend_id: str) -> Optional[str]:
         with self._lock:
@@ -131,6 +154,35 @@ class EphemeralStore:
         with self._lock:
             return b in self._friends.get(a, set())
 
+    def add_pending_friend_accept(self, to_id: str, friend_id: str, friend_code: str, public_key: str, fingerprint: str = ""):
+        with self._lock:
+            if to_id not in self._pending_accepts:
+                self._pending_accepts[to_id] = []
+            for item in self._pending_accepts[to_id]:
+                if item["friend_id"] == friend_id:
+                    item.update({
+                        "friend_code": friend_code,
+                        "public_key": public_key,
+                        "fingerprint": fingerprint,
+                        "timestamp": time.time(),
+                    })
+                    return
+            self._pending_accepts[to_id].append({
+                "friend_id": friend_id,
+                "friend_code": friend_code,
+                "public_key": public_key,
+                "fingerprint": fingerprint,
+                "timestamp": time.time(),
+            })
+
+    def get_pending_friend_accepts(self, account_id: str) -> list[dict]:
+        with self._lock:
+            return list(self._pending_accepts.get(account_id, []))
+
+    def clear_pending_friend_accepts(self, account_id: str):
+        with self._lock:
+            self._pending_accepts[account_id] = []
+
     def _purge_expired(self):
         expired = [mid for mid, m in self._messages.items() if m.expired]
         for mid in expired:
@@ -149,6 +201,7 @@ class EphemeralStore:
                     self._friends.get(friend, set()).discard(account_id)
                 del self._friends[account_id]
             self._pending_friends.pop(account_id, None)
+            self._pending_accepts.pop(account_id, None)
             for aid in self._pending_friends:
                 self._pending_friends[aid] = [
                     r for r in self._pending_friends[aid]
@@ -163,6 +216,8 @@ class EphemeralStore:
             self._messages.clear()
             for aid in list(self._pending_friends.keys()):
                 self._pending_friends[aid].clear()
+            for aid in list(self._pending_accepts.keys()):
+                self._pending_accepts[aid].clear()
 
     def secure_wipe_buffers(self):
         with self._lock:
