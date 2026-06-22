@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set "REMOTE_HOST=192.168.178.111"
+set "REMOTE_HOST=enterlanip"
 set "REMOTE_USER=server"
 set "REMOTE_DIR=/home/server/koalachat"
 set "ARCHIVE=koalachat-deploy.tar.gz"
