@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-REMOTE_HOST="${KOALA_REMOTE_HOST:-192.168.178.111}"
+REMOTE_HOST="${KOALA_REMOTE_HOST:-ENTER-LAN}"
 REMOTE_USER="${KOALA_REMOTE_USER:-server}"
 REMOTE_DIR="${KOALA_REMOTE_DIR:-/home/server/koalachat}"
 ARCHIVE="koalachat-deploy.tar.gz"
