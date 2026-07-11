@@ -4,6 +4,7 @@ const Friends = {
   sentRequests: [],
   peerKeys: {},
   peerCodes: {},
+  nicknames: {},
 
   async loadFromStorage() {
     const stored = localStorage.getItem("koala_friends");
@@ -16,12 +17,15 @@ const Friends = {
     if (incoming) Friends.incomingRequests = JSON.parse(incoming);
     const sent = localStorage.getItem("koala_sent_requests");
     if (sent) Friends.sentRequests = JSON.parse(sent);
+    const nicknames = localStorage.getItem("koala_nicknames");
+    if (nicknames) Friends.nicknames = JSON.parse(nicknames);
   },
 
   save() {
     localStorage.setItem("koala_friends", JSON.stringify(Friends.list));
     localStorage.setItem("koala_peer_keys", JSON.stringify(Friends.peerKeys));
     localStorage.setItem("koala_peer_codes", JSON.stringify(Friends.peerCodes));
+    localStorage.setItem("koala_nicknames", JSON.stringify(Friends.nicknames));
     localStorage.setItem("koala_incoming_requests", JSON.stringify(Friends.incomingRequests));
     localStorage.setItem("koala_sent_requests", JSON.stringify(Friends.sentRequests));
   },
@@ -64,24 +68,46 @@ const Friends = {
   add(friendId, publicKeyHex, friendCode) {
     if (!Friends.list.includes(friendId)) {
       Friends.list.push(friendId);
-      Friends.peerKeys[friendId] = publicKeyHex;
+      if (publicKeyHex) Friends.peerKeys[friendId] = publicKeyHex;
       if (friendCode) Friends.peerCodes[friendId] = friendCode;
       Friends.removeRequest(friendId);
       Friends.save();
-    } else if (friendCode) {
-      Friends.peerCodes[friendId] = friendCode;
-      Friends.save();
+      return;
     }
+    let changed = false;
+    if (publicKeyHex && Friends.peerKeys[friendId] !== publicKeyHex) {
+      Friends.peerKeys[friendId] = publicKeyHex;
+      KoalaMix.wipePeer(friendId);
+      changed = true;
+    }
+    if (friendCode && Friends.peerCodes[friendId] !== friendCode) {
+      Friends.peerCodes[friendId] = friendCode;
+      changed = true;
+    }
+    if (changed) Friends.save();
   },
 
   displayName(friendId) {
-    return Friends.peerCodes[friendId] || friendId;
+    const nickname = Friends.nicknames[friendId];
+    if (nickname) return nickname;
+    return `Contact ${friendId.slice(-4)}`;
+  },
+
+  setNickname(friendId, name) {
+    const trimmed = (name || "").trim();
+    if (trimmed) {
+      Friends.nicknames[friendId] = trimmed.slice(0, 32);
+    } else {
+      delete Friends.nicknames[friendId];
+    }
+    Friends.save();
   },
 
   remove(friendId) {
     Friends.list = Friends.list.filter((f) => f !== friendId);
     delete Friends.peerKeys[friendId];
     delete Friends.peerCodes[friendId];
+    delete Friends.nicknames[friendId];
     KoalaMix.wipePeer(friendId);
     Friends.save();
   },
@@ -120,9 +146,11 @@ const Friends = {
     Friends.sentRequests = [];
     Friends.peerKeys = {};
     Friends.peerCodes = {};
+    Friends.nicknames = {};
     localStorage.removeItem("koala_friends");
     localStorage.removeItem("koala_peer_keys");
     localStorage.removeItem("koala_peer_codes");
+    localStorage.removeItem("koala_nicknames");
     localStorage.removeItem("koala_incoming_requests");
     localStorage.removeItem("koala_sent_requests");
     KoalaMix.wipeAll();

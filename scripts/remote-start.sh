@@ -2,10 +2,35 @@
 set -eu
 
 PORT="${KOALA_PORT:-8999}"
+PUBLIC_HOST="${KOALA_PUBLIC_HOST:-chat.justmrkoalaai.nl}"
+if [ -z "${KOALA_TLS_SAN_IP:-}" ]; then
+  KOALA_TLS_SAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+fi
+export KOALA_TLS_SAN_IP
+export KOALA_PUBLIC_HOST="$PUBLIC_HOST"
+export KOALA_BEHIND_PROXY=1
+
+set_env() {
+  key="$1"
+  value="$2"
+  if [ -f .env ] && grep -q "^${key}=" .env 2>/dev/null; then
+    sed -i "s|^${key}=.*|${key}=${value}|" .env
+  else
+    echo "${key}=${value}" >> .env
+  fi
+}
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-HEALTH_URL="https://127.0.0.1:${PORT}/health"
+set_env KOALA_TLS_SAN_IP "$KOALA_TLS_SAN_IP"
+set_env KOALA_BEHIND_PROXY 1
+set_env KOALA_BIND 0.0.0.0
+set_env KOALA_PORT "$PORT"
+set_env KOALA_ENV production
+set_env KOALA_PUBLIC_HOST "$PUBLIC_HOST"
+
+HEALTH_URL="http://127.0.0.1:${PORT}/health"
 MAX_HEALTH_ATTEMPTS=30
 HEALTH_INTERVAL=2
 
@@ -68,15 +93,65 @@ wait_for_health() {
   fi
   attempt=0
   while [ "$attempt" -lt "$MAX_HEALTH_ATTEMPTS" ]; do
-    if curl -skf "$HEALTH_URL" >/dev/null 2>&1; then
+    if curl -sf "$HEALTH_URL" >/dev/null 2>&1; then
       echo "Health check passed: ${HEALTH_URL}"
       return 0
+    fi
+    if curl -skf "https://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
+      echo "ERROR: Backend is serving HTTPS on port ${PORT}. Nginx requires HTTP (KOALA_BEHIND_PROXY=1)."
+      dc logs --tail 40 2>/dev/null || true
+      return 1
     fi
     attempt=$((attempt + 1))
     echo "Waiting for KoalaChat to become healthy (${attempt}/${MAX_HEALTH_ATTEMPTS})..."
     sleep "$HEALTH_INTERVAL"
   done
   echo "ERROR: KoalaChat did not pass /health within $((MAX_HEALTH_ATTEMPTS * HEALTH_INTERVAL)) seconds."
+  return 1
+}
+
+npm_detected() {
+  if command -v docker >/dev/null 2>&1; then
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qiE 'nginx-proxy-manager|npm|proxy-manager'; then
+      return 0
+    fi
+  fi
+  if curl -sf --max-time 3 http://127.0.0.1/ 2>/dev/null | grep -qi 'nginx proxy manager'; then
+    return 0
+  fi
+  return 1
+}
+
+wait_for_proxy() {
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "WARNING: curl not found; skipping reverse-proxy health check."
+    return 0
+  fi
+
+  if npm_detected; then
+    if curl -sf -H "Host: ${PUBLIC_HOST}" "http://127.0.0.1/health" >/dev/null 2>&1; then
+      echo "NPM proxy check passed: http://${PUBLIC_HOST}/health"
+      return 0
+    fi
+    echo "WARNING: NPM proxy host for ${PUBLIC_HOST} is not forwarding yet."
+    echo "Configure NPM: scheme http, forward ${KOALA_TLS_SAN_IP}:${PORT}, websockets on."
+    return 0
+  fi
+
+  attempt=0
+  while [ "$attempt" -lt 10 ]; do
+    if curl -skf "https://127.0.0.1/health" >/dev/null 2>&1; then
+      echo "Nginx health check passed: https://127.0.0.1/health"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    echo "Waiting for nginx to proxy KoalaChat (${attempt}/10)..."
+    sleep 2
+  done
+  echo "ERROR: Nginx is not returning /health on port 443."
+  if command -v sudo >/dev/null 2>&1; then
+    sudo tail -10 /var/log/nginx/error.log 2>/dev/null || true
+  fi
   return 1
 }
 
@@ -87,15 +162,23 @@ fi
 
 wait_for_port_free
 
-echo "Building and starting KoalaChat..."
+export KOALA_WIPE_ON_START=1
+
+echo "Building KoalaChat image (no cache)..."
+if ! KOALA_BEHIND_PROXY=1 dc build --no-cache; then
+  echo "ERROR: docker compose build --no-cache failed."
+  exit 1
+fi
+
+echo "Starting KoalaChat (force recreate)..."
 if dc up --help 2>&1 | grep -q -- '--wait'; then
-  if ! dc up -d --build --remove-orphans --wait; then
+  if ! KOALA_BEHIND_PROXY=1 dc up -d --force-recreate --remove-orphans --wait; then
     echo "ERROR: docker compose up --wait failed."
     dc ps -a 2>/dev/null || true
     dc logs --tail 80 2>/dev/null || true
     exit 1
   fi
-elif ! dc up -d --build --remove-orphans; then
+elif ! KOALA_BEHIND_PROXY=1 dc up -d --force-recreate --remove-orphans; then
   echo "ERROR: docker compose up failed."
   dc ps -a 2>/dev/null || true
   dc logs --tail 80 2>/dev/null || true
@@ -118,4 +201,19 @@ if ! wait_for_health; then
   exit 1
 fi
 
-echo "KoalaChat is running on port ${PORT}."
+echo "Configuring reverse proxy..."
+if ! sh "$ROOT/scripts/setup-nginx.sh"; then
+  echo "ERROR: reverse-proxy setup failed."
+  exit 1
+fi
+
+if ! wait_for_proxy; then
+  exit 1
+fi
+
+if npm_detected; then
+  echo "KoalaChat backend: http://${KOALA_TLS_SAN_IP}:${PORT}"
+  echo "Public URL: https://${PUBLIC_HOST} (Cloudflare A record -> server, NPM proxy host)"
+else
+  echo "KoalaChat is running behind nginx on https://${KOALA_TLS_SAN_IP}"
+fi

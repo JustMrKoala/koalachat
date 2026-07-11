@@ -1,6 +1,7 @@
 {
   "name": "KoalaChat",
   "short_name": "KoalaChat",
+  "version": "1.6.2",
   "description": "Privacy-first encrypted messaging with end-to-end encryption",
   "start_url": "/",
   "display": "standalone",

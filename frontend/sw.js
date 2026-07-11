@@ -1,15 +1,19 @@
-const CACHE_NAME = "koala-v8";
+const CACHE_NAME = "koala-v29";
 const ASSETS = [
   "/",
   "/static/css/style.css",
   "/static/js/crypto/e2ee.js",
   "/static/js/crypto/koalamix.js",
+  "/static/js/crypto/group_crypto.js",
+  "/static/js/vendor/qrcode.min.js",
+  "/static/js/vendor/html5-qrcode.min.js",
   "/static/js/ws.js",
   "/static/js/friends.js",
+  "/static/js/groups.js",
   "/static/js/messages.js",
+  "/static/js/media.js",
   "/static/js/purge.js",
   "/static/js/antitamper.js",
-  "/static/js/offline.js",
   "/static/js/app.js",
   "/static/icons/logo.png",
   "/manifest.json",

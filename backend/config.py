@@ -17,6 +17,7 @@ class Settings:
         self.workers = int(os.environ.get("KOALA_WORKERS", "1"))
         self.log_level = os.environ.get("KOALA_LOG_LEVEL", "info")
         self.allowed_origins = os.environ.get("KOALA_ALLOWED_ORIGINS", "")
+        self.max_message_size = int(os.environ.get("KOALA_MAX_MSG_KB", "256")) * 1024
 
     @property
     def is_production(self) -> bool:

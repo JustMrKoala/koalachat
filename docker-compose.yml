@@ -5,7 +5,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: koalachat
     ports:
-      - "${KOALA_PORT:-8999}:8999"
+      - "${KOALA_BIND:-0.0.0.0}:${KOALA_PORT:-8999}:8999"
     volumes:
       - koala-certs:/certs
     env_file:
@@ -19,6 +19,10 @@ services:
       - SSL_CERT=/certs/cert.pem
       - SSL_KEY=/certs/key.pem
       - KOALA_ALLOW_SELF_SIGNED=${KOALA_ALLOW_SELF_SIGNED:-1}
+      - TLS_SAN_IP=${KOALA_TLS_SAN_IP:-}
+      - KOALA_TLS_HOST=${KOALA_TLS_HOST:-}
+      - KOALA_WIPE_ON_START=${KOALA_WIPE_ON_START:-}
+      - KOALA_BEHIND_PROXY=1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -28,7 +32,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('https://localhost:8999/health', context=__import__('ssl')._create_unverified_context())"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8999/health')"]
       interval: 30s
       timeout: 10s
       retries: 3

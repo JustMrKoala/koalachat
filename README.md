@@ -4,15 +4,14 @@ Privacy-first, end-to-end encrypted instant messaging. Anonymous accounts, ephem
 
 ## Features
 
-- **Client-side E2EE** — AES-256-GCM with the KoalaMix protocol (ratcheted keys, padded packets, blind tokens)
-- **Server envelope encryption** — outer layer on E2EE payloads at rest; server never sees plaintext
-- **Separate IDs** — 16-digit account ID (private) and 10-digit friend code (shareable)
-- **Ephemeral messages** — configurable TTL with automatic wipe
-- **No database** — server state lives in memory only; nothing is persisted to disk
-- **Koala Purge** — one-tap irreversible local and server buffer wipe
-- **PWA** — installable on iOS and Android with fullscreen standalone mode
-- **Anti-tamper** — screenshot/recording mitigations, blur on tab switch
-- **Tor-friendly** — works via Tor Browser or system proxy
+- **Client-side E2EE** AES-256-GCM with the KoalaMix protocol (ratcheted keys, padded packets, blind tokens)
+- **Server envelope encryption** outer layer on E2EE payloads at rest; server never sees plaintext
+- **Separate IDs** 16-digit account ID (private) and 10-digit friend code (shareable)
+- **Ephemeral messages** configurable TTL with automatic wipe
+- **Koala Purge** one-tap irreversible local and server buffer wipe
+- **PWA** installable on iOS and Android with fullscreen standalone mode
+- **Anti-tamper** screenshot/recording mitigations, blur on tab switch
+- **Tor-friendly** works via Tor Browser or system proxy
 
 ## Architecture
 
@@ -29,9 +28,9 @@ FastAPI relay (port 8999)
 
 | Component | Path |
 |-----------|------|
-| Backend | `backend/` — FastAPI, WebSockets, crypto relay |
-| Frontend | `frontend/` — PWA, Web Crypto API, KoalaMix |
-| Docker | `docker/` — production image and entrypoint |
+| Backend | `backend/` FastAPI, WebSockets, crypto relay |
+| Frontend | `frontend/` PWA, Web Crypto API, KoalaMix |
+| Docker | `docker/` production image and entrypoint |
 
 ## Quick Start (Docker)
 
@@ -98,43 +97,41 @@ Set `KOALA_ALLOW_SELF_SIGNED=0` so the container refuses to start without valid 
 
 ### Remote deploy
 
-Set your target host before deploying. No server addresses or credentials are bundled in this repository.
-
 **Linux / macOS:**
 
 ```bash
-export KOALA_REMOTE_HOST=chat.example.com
-export KOALA_REMOTE_USER=deploy
-export KOALA_REMOTE_DIR=/opt/koalachat
+export KOALA_REMOTE_HOST=your-server.example
+export KOALA_REMOTE_USER=server
 make deploy
 ```
 
 **Windows:**
 
 ```bat
-set KOALA_REMOTE_HOST=chat.example.com
-set KOALA_REMOTE_USER=deploy
+set KOALA_REMOTE_HOST=your-server.example
 deploy.bat
 ```
 
-Both scripts SCP the project and run `docker compose up -d --build` on the remote host. Deploy fails if the container does not pass `/health`.
+`deploy.bat` auto-detects common SSH private keys from `%USERPROFILE%\.ssh\` (id_ed25519, id_rsa, id_ecdsa, and admin variants like id_ed25519_admin). It forces public key authentication and disables password fallback.
 
-When using Cloudflare or another CDN in front of the app, bypass cache for HTML and `/sw.js` or users may see stale UI after deploys.
+Set `KOALA_SSH_KEY` explicitly if you need a non-standard key path.
+
+Both scripts SCP the project and run `docker compose up -d --build` on the remote host.
 
 ### Health checks
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /health` | Liveness — returns `{"status":"ok"}` |
-| `GET /ready` | Readiness — includes active connection count |
+| `GET /health` | Liveness returns `{"status":"ok"}` |
+| `GET /ready` | Readiness includes active connection count |
 
 ## Usage
 
-1. **Create Account** — generates keys locally; receive account ID + friend code
-2. **Share friend code** — QR scan or manual entry (never share your account ID)
-3. **Accept requests** — mutual approval required
-4. **Chat** — messages are E2EE with disappearing TTL
-5. **Koala Purge** — Settings → emergency wipe
+1. **Create Account** generates keys locally; receive account ID + friend code
+2. **Share friend code** QR scan or manual entry (never share your account ID)
+3. **Accept requests** mutual approval required
+4. **Chat** messages are E2EE with disappearing TTL
+5. **Koala Purge** Settings → emergency wipe
 
 ## Security Model
 
